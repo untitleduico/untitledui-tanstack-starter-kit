@@ -5,6 +5,14 @@ import { RouteProvider } from "@/providers/router-provider";
 import { ThemeProvider } from "@/providers/theme-provider";
 import appCss from "@/styles/globals.css?url";
 
+// Applies the saved theme before the page paints, so a dark-mode visitor never sees a light flash.
+const themeScript = `
+    const theme = localStorage.getItem("ui-theme");
+    if (theme === "dark" || (!theme && window.matchMedia("(prefers-color-scheme: dark)").matches)) {
+        document.documentElement.classList.add("dark-mode");
+    }
+`;
+
 export const Route = createRootRoute({
     head: () => ({
         meta: [
@@ -24,12 +32,7 @@ export const Route = createRootRoute({
             },
             { rel: "stylesheet", href: appCss },
         ],
-        scripts: [
-            {
-                // On page load or when changing themes, best to run inline in `head` to avoid FOUC.
-                children: `if (localStorage.theme === "dark" || (!("theme" in localStorage) && window.matchMedia("(prefers-color-scheme: dark)").matches)) { document.documentElement.classList.add("dark-mode"); } else { document.documentElement.classList.remove("dark-mode"); }`,
-            },
-        ],
+        scripts: [{ children: themeScript }],
     }),
     shellComponent: RootDocument,
     component: RootComponent,
@@ -38,7 +41,7 @@ export const Route = createRootRoute({
 
 function RootDocument({ children }: { children: ReactNode }) {
     return (
-        <html lang="en">
+        <html lang="en" suppressHydrationWarning>
             <head>
                 <HeadContent />
             </head>
